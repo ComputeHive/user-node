@@ -1,0 +1,14 @@
+./libraries/zfec-1.5.5+1.g0bee9e7.zip
+certifi==2021.5.30
+chardet==4.0.0
+idna==2.10
+psutil==5.8.0
+pycryptodome==3.10.1
+PyQt5==5.15.4
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.8.1
+PyQt5Designer==5.14.1
+requests==2.25.1
+urllib3==1.26.6
+zmq==0.0.0
+pyzmq==22.1.0

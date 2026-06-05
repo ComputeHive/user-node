@@ -1,0 +1,36 @@
+[project]
+name = "user-node-main"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "omarhashem", email = "omarsayed4736@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+
+dependencies = [
+    "certifi==2021.5.30",
+    "chardet==4.0.0",
+    "idna==2.10",
+    "psutil==5.8.0",
+    "pycryptodome==3.10.1",
+    "PyQt5==5.15.11",
+    "PyQt5-Qt5==5.15.2",
+    "PyQt5-sip>=12.13",
+    "requests==2.25.1",
+    "urllib3==1.26.6",
+    "pyzmq==26.2.0",
+    "cryptography>=45.0.0",
+    "argon2-cffi>=25.1.0"
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+zfec = { path = "./libraries/zfec-1.5.5+1.g0bee9e7.zip" }
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
