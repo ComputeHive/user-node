@@ -1,28 +1,47 @@
 import hashlib
-import random
+import os
+
 from .helper import Helper
+
 helper = Helper()
 
 
-def generate_audits(file, audits_count=helper.audits_default_count):
+def generate_audits(file_path, audits_count=helper.audits_default_count):
     """
-    This function generate audits to a given file
-    :param file: input file that will need audits
-    :param audits_count: number of audits to be generated
-    :return: list of audits
+    Generate audit records for a file.
+
+    Each audit consists of a randomly generated salt and the MD5 hash
+    of the file's MD5 digest combined with that salt. The resulting
+    audits can later be used to verify file integrity.
+
+    Args:
+        file_path (str): Path to the file for which audits will be generated.
+        audits_count (int, optional): Number of audit records to generate.
+            Defaults to ``helper.audits_default_count``.
+
+    Returns:
+        list[dict[str, str]]: A list of audit records. Each record contains:
+            - ``salt``: Random 16-byte salt encoded as a hexadecimal string.
+            - ``hash``: Hexadecimal MD5 digest associated with the salt.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        OSError: If the file cannot be opened or read.
     """
+    with open(file_path, "rb") as f:
+        base_hash = hashlib.md5(f.read())
+
     audits = []
-    with open(file, "rb") as file:
-        file_hash = hashlib.md5()
-        file_content = file.read()
-        file_hash.update(file_content)
 
-    for i in range(audits_count):
-        # generate random salt of length 16 bytes
-        salt = ''.join([chr(random.randint(0, 0xFF)) for i in range(16)])
-        file_hash_copy = file_hash.copy()
+    for _ in range(audits_count):
+        salt = os.urandom(16)
 
-        file_hash_copy.update(salt.encode())
-        # append to audits list
-        audits.append({"salt": salt, "hash": file_hash_copy.hexdigest()})
+        audit_hash = base_hash.copy()
+        audit_hash.update(salt)
+
+        audits.append({
+            "salt": salt.hex(),
+            "hash": audit_hash.hexdigest(),
+        })
+
     return audits
