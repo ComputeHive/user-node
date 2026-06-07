@@ -5,9 +5,7 @@ from contextlib import ExitStack
 
 from zfec import filefec
 
-from .helper import Helper
 
-helper = Helper()
 logger = logging.getLogger(__name__)
 
 
@@ -103,7 +101,7 @@ def decode(
 
     os.makedirs(retrieved_segments_directory, exist_ok=True)
 
-    segment_name = f"{helper.segment_filename}_{segment_number}"
+    segment_name = f"segment_{segment_number}"
     segment_path = os.path.join(retrieved_segments_directory, segment_name)
 
     logger.info("Decoding → %s", segment_path)

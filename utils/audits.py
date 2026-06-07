@@ -1,47 +1,36 @@
+"""
+utils/audits.py – File integrity audit generation.
+
+No global state: the default audit count is imported from settings.
+"""
+
+from __future__ import annotations
+
 import hashlib
 import os
 
-from .helper import Helper
-
-helper = Helper()
+from config.settings import AUDITS_DEFAULT_COUNT
 
 
-def generate_audits(file_path, audits_count=helper.audits_default_count):
+def generate_audits(file_path: str, count: int = AUDITS_DEFAULT_COUNT) -> list[dict[str, str]]:
     """
-    Generate audit records for a file.
+    Generate *count* audit records for *file_path*.
 
-    Each audit consists of a randomly generated salt and the MD5 hash
-    of the file's MD5 digest combined with that salt. The resulting
-    audits can later be used to verify file integrity.
-
-    Args:
-        file_path (str): Path to the file for which audits will be generated.
-        audits_count (int, optional): Number of audit records to generate.
-            Defaults to ``helper.audits_default_count``.
-
-    Returns:
-        list[dict[str, str]]: A list of audit records. Each record contains:
-            - ``salt``: Random 16-byte salt encoded as a hexadecimal string.
-            - ``hash``: Hexadecimal MD5 digest associated with the salt.
+    Each record contains:
+    - ``salt``: 16 random bytes as a hex string.
+    - ``hash``: MD5 of the file's MD5 combined with the salt.
 
     Raises:
-        FileNotFoundError: If the specified file does not exist.
-        OSError: If the file cannot be opened or read.
+        FileNotFoundError: If the file does not exist.
     """
     with open(file_path, "rb") as f:
         base_hash = hashlib.md5(f.read())
 
     audits = []
-
-    for _ in range(audits_count):
+    for _ in range(count):
         salt = os.urandom(16)
-
         audit_hash = base_hash.copy()
         audit_hash.update(salt)
-
-        audits.append({
-            "salt": salt.hex(),
-            "hash": audit_hash.hexdigest(),
-        })
+        audits.append({"salt": salt.hex(), "hash": audit_hash.hexdigest()})
 
     return audits
