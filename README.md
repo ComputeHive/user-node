@@ -1,6 +1,6 @@
 # CERA User Node
 
-A desktop client for the CERA decentralised storage network. Users can upload files to the network with client-side encryption and erasure coding, then retrieve them from any machine using their decryption key.
+A desktop client for the CERA distributed storage network. Users can upload files to the network with client-side encryption and erasure coding, then retrieve them from any machine using their decryption key.
 
 ---
 
@@ -18,7 +18,7 @@ Download reverses the process: collect *k* shards → decode → decrypt → wri
 
 ## Requirements
 
-- Python **3.10 or 3.11** (3.12+ is not supported due to a zfec build constraint)
+- Python **3.10 or 3.11**
 - [Poetry](https://python-poetry.org/) (recommended) **or** pip
 
 ---
@@ -28,7 +28,7 @@ Download reverses the process: collect *k* shards → decode → decrypt → wri
 ### With Poetry (recommended)
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/ComputeHive/user-node.git
 cd User-Node
 poetry install
 ```
