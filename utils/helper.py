@@ -48,8 +48,8 @@ class Helper:
         self.host_url = os.environ.get("CERA_HOST_URL", "http://localhost:5000/")
         if not self.host_url.endswith("/"):
             self.host_url += "/"
-        self.frontend_url = "http://localhost:3000/user"
-        self.client_url_prefix = "user/"
+        self.frontend_url = "http://localhost:3000/users"
+        self.client_url_prefix = "users/"
 
         self.server_not_responding = "Check your internet connection"
 

@@ -1,5 +1,5 @@
 """
-cera.py  –  API layer for the Decentorage backend
+cera.py  –  API layer for the CERA backend
 =========================================================
 Every function checks the relevant BYPASS_* flag from dev_config
 before making a network call.  When the flag is True the function
@@ -58,7 +58,7 @@ def user_login(username: str, password: str):
 
     try:
         response = requests.post(
-            helper.host_url + helper.client_url_prefix + "signin",
+            helper.host_url + "/users/signin",
             json={"username": username, "password": password},
         )
     except Exception:
@@ -85,7 +85,7 @@ def get_user_state(ui):
         return helper.state_upload_file
 
     return _api_get(
-        helper.host_url + helper.client_url_prefix + "getState",
+        helper.host_url + "/users/me/state",
         ui,
         lambda r: r.json()["state"],
     )
@@ -105,7 +105,7 @@ def get_price(contract_details: dict, ui):
         return DEV_PRICE_WEI
 
     return _api_get(
-        helper.host_url + helper.client_url_prefix + "getPrice",
+        helper.host_url + "/users/me/files/pending/price",
         ui,
         lambda r: r.json()["price"],
         params={
@@ -135,7 +135,7 @@ def get_user_files(ui):
         return DEV_FAKE_FILES
 
     return _api_get(
-        helper.host_url + helper.client_url_prefix + "getFiles",
+        helper.host_url + "/users/me/files",
         ui,
         lambda r: r.json(),
     )
@@ -158,8 +158,8 @@ def create_file(contract_details: dict, ui):
             worker_error_page("Please Login again", "", ui, ui.login_page)
             return False
         response = requests.post(
-            helper.host_url + helper.client_url_prefix + "createFile",
-            headers={"token": token},
+            helper.host_url + "/users/me/files",
+            headers={"TOKEN": token},
             json=json.dumps(contract_details),
         )
     except Exception:
@@ -232,7 +232,7 @@ def get_pending_file_info(ui):
         return {"file_size": file_size, "segments": dev_segments}
 
     return _api_get(
-        helper.host_url + helper.client_url_prefix + "getFileInfo",
+        helper.host_url + "/users/me/files/pending",
         ui,
         lambda r: r.json(),
     )
@@ -254,16 +254,16 @@ def shard_done_uploading(shard_id: str, audits: list, ui):
         if not token:
             worker_error_page("Please Login again", "", ui, ui.login_page)
             return False
-        response = requests.post(
-            helper.host_url + helper.client_url_prefix + "shardDoneUploading",
+        response = requests.patch(
+            helper.host_url + "/users/me/files/pending/shards/done",
             json={"shard_id": os.path.basename(shard_id), "audits": audits},
-            headers={"token": token},
+            headers={"TOKEN": token},
         )
     except Exception:
         worker_error_page("Error", helper.server_not_responding, ui)
         return False
 
-    if response and response.status_code == 200:
+    if response and response.status_code == 204:
         return True
     worker_error_page("Please Login again", "", ui, ui.login_page)
     return False
@@ -288,9 +288,10 @@ def file_done_uploading(ui, filename: str | None = None):
         return True
 
     return _api_get(
-        helper.host_url + helper.client_url_prefix + "fileDoneUploading",
+        helper.host_url + "/users/me/files/pending/done",
         ui,
         lambda r: True,
+        method="PATCH",
     )
 
 
@@ -331,9 +332,8 @@ def start_download(filename: str, ui):
             worker_error_page("Please Login again", "", ui, ui.login_page)
             return False
         response = requests.post(
-            helper.host_url + helper.client_url_prefix + "startDownload",
-            json={"filename": filename},
-            headers={"token": token},
+            helper.host_url + f"/users/me/files/{filename}/downloads",
+            headers={"TOKEN": token},
         )
     except Exception:
         worker_error_page("Error", helper.server_not_responding, ui)
@@ -385,10 +385,10 @@ def _write_token(token: str):
         f.write(token)
 
 
-def _api_get(url: str, ui, extract_fn, params=None):
+def _api_get(url: str, ui, extract_fn, params=None, method: str = "GET"):
     """
-    DRY wrapper for authenticated GET requests.
-    Returns extract_fn(response) on HTTP 200, False otherwise.
+    DRY wrapper for authenticated GET/PATCH requests.
+    Returns extract_fn(response) on HTTP 200/204, False otherwise.
     """
     response = None
     try:
@@ -396,12 +396,15 @@ def _api_get(url: str, ui, extract_fn, params=None):
         if not token:
             worker_error_page("Please Login again", "", ui, ui.login_page)
             return False
-        response = requests.get(url, params=params, headers={"token": token})
+        if method == "PATCH":
+            response = requests.patch(url, headers={"TOKEN": token})
+        else:
+            response = requests.get(url, params=params, headers={"TOKEN": token})
     except Exception:
         worker_error_page("Error", helper.server_not_responding, ui)
         return False
 
-    if response and response.status_code == 200:
+    if response and response.status_code in (200, 204):
         return extract_fn(response)
 
     worker_error_page("Please Login again", "", ui, ui.login_page)
