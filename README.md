@@ -98,42 +98,62 @@ Set `CERA_LOCAL_MODE=0` and point `CERA_HOST_URL` at a running coordinator. The 
 
 ```
 User-Node/
-├── main.py                     Entry point
-├── controllers/
-│   ├── page_controller.py      Navigation hub — owns the main window
-│   ├── worker.py               Background task runner (QThreadPool)
-│   └── progress_bar.py         Thread-safe Qt progress widget
-├── pages/
-│   ├── login.py
-│   ├── main.py
-│   ├── upload_main.py
-│   ├── show_files.py
-│   ├── contract_details.py
-│   └── transition.py
+├── main.py                              Entry point — builds AppContainer, launches PageController
+├── config/
+│   └── settings.py                      All env-var config (LOCAL_MODE, BYPASS_* flags, URLs)
+├── core/
+│   ├── erasure_params.py                Pure erasure-coding arithmetic (k, m); no I/O
+│   ├── paths.py                         AppPaths value object — all runtime directory/file paths
+│   └── user_state.py                    Upload-state constants and their display strings
+├── application/
+│   ├── container.py                     DI container — constructs and wires every service once
+│   ├── upload_service.py                Upload pipeline use-case (encrypt → encode → transfer)
+│   └── download_service.py             Download pipeline use-case (fetch shards → decode → decrypt)
+├── infrastructure/
+│   ├── api/
+│   │   ├── cera_client.py               Production HTTP client for the CERA coordinator
+│   │   └── cera_client_dev.py           Offline stand-in — fulfils the same interface from disk
+│   ├── storage/
+│   │   └── local_index.py               Per-file shard index for dev/local mode
+│   ├── transfer/
+│   │   └── shard_transfer.py            ZMQ shard send/receive (falls back to file-copy in dev mode)
+│   ├── filesystem.py                    Disk bootstrap — creates runtime directories on first run
+│   ├── token_repository.py              Read/write the auth token cache file
+│   └── transfer_repository.py          Persist upload/download transfer state (JSON)
+├── presentation/
+│   ├── controllers/
+│   │   ├── page_controller.py           Navigation hub — owns the main window and page stack
+│   │   └── worker.py                    Background task runner (QThreadPool)
+│   ├── pages/
+│   │   ├── login.py
+│   │   ├── main.py
+│   │   ├── upload_main.py
+│   │   ├── show_files.py
+│   │   ├── contract_details.py
+│   │   └── transition.py
+│   └── widgets/
+│       ├── progress_bar.py              Thread-safe Qt progress bar (byte-count → signal)
+│       └── qt_signals.py               Signal helpers that marshal calls to the main thread
 ├── utils/
-│   ├── cera.py                 CERA coordinator API client
-│   ├── encryption.py           AES-256-GCM streaming encryption
-│   ├── erasure_coding.py       zfec encode / decode wrappers
-│   ├── file_handler.py         Upload and download pipeline
-│   ├── file_transfer_user.py   ZMQ shard send / receive
-│   ├── audits.py               File integrity audit generation
-│   ├── helper.py               Shared config and filesystem paths
-│   ├── local_storage.py        Dev-mode shard index
-│   ├── app_config.py           LOCAL_MODE flag
-│   └── dev_config.py           Per-concern BYPASS_* flags
+│   ├── encryption.py                    AES-256-GCM streaming encryption / decryption
+│   ├── erasure_coding.py                zfec encode/decode wrappers
+│   └── audits.py                        File integrity audit generation
 ├── gui/
-│   ├── ui.py                   Qt Designer generated UI
-│   ├── cera.ui                 Qt Designer source
-│   └── resources/              Icons and images
-├── data/                       Runtime data (git-ignored)
-│   ├── cache/                  Auth token and transfer state
-│   ├── shards/                 In-progress erasure coded shards
-│   ├── segments/               In-progress file segments
-│   ├── encrypted/              In-progress encrypted segments
-│   ├── dev_host/               Local shard store (local mode)
-│   └── downloaded data/        Completed downloads
+│   ├── ui.py                            Qt Designer generated UI bindings
+│   ├── cera.ui                          Qt Designer source file
+│   ├── cera_logo.qrc                    Qt resource file (logo assets)
+│   └── resources/                       Icons and images
+├── cera_logo_rc.py                      Compiled Qt resource module (generated from .qrc)
+├── data/                                Runtime data (git-ignored)
+│   ├── cache/                           Auth token and transfer state
+│   ├── shards/                          In-progress erasure coded shards
+│   ├── segments/                        In-progress file segments
+│   ├── encrypted/                       In-progress encrypted segments
+│   ├── dev_host/                        Local shard store (local mode only)
+│   └── downloaded data/                 Completed downloads
 ├── libraries/
-│   └── zfec-*.zip              Vendored zfec build
+│   └── zfec-1.5.5+1.g0bee9e7.zip       Vendored zfec wheel
+├── test.py                              End-to-end pipeline test (encrypt → encode → decode → decrypt)
 ├── pyproject.toml
 ├── requirements.txt
 └── .env.example
@@ -175,19 +195,6 @@ Each file is split into segments (default 500 MB each). Every segment is erasure
 - **m = k + 1 = 3** — total shards produced
 
 This means one storage node can go offline without losing the file. Both k and m scale with the network contract parameters.
-
----
-
-## Running the pipeline test
-
-`test.py` exercises encrypt → encode → decode → decrypt end-to-end without the GUI or network:
-
-```bash
-# Place a test file at data/document.pdf first
-poetry run python test.py
-```
-
-Output is written to `data/document_restored.pdf`.
 
 ---
 
